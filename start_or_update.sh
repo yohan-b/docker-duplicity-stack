@@ -13,7 +13,7 @@ test -z $1 || SCRIPT="$1"
 test -z $2 || HOST="_$2"
 test -z $3 || INSTANCE="_$3"
 
-USER=${whoami}
+USER=$(whoami)
 
 test -f ~/secrets.tar.gz.enc || curl -o ~/secrets.tar.gz.enc "https://${CLOUD_SERVER}/s/${KEY}/download?path=%2F&files=secrets.tar.gz.enc"
 openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc \
