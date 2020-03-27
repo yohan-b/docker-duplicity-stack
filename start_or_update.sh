@@ -13,6 +13,8 @@ test -z $1 || SCRIPT="$1"
 test -z $2 || HOST="_$2"
 test -z $3 || INSTANCE="_$3"
 
+USER=${whoami}
+
 test -f ~/secrets.tar.gz.enc || curl -o ~/secrets.tar.gz.enc "https://${CLOUD_SERVER}/s/${KEY}/download?path=%2F&files=secrets.tar.gz.enc"
 openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc \
  | sudo tar -zxv --strip 2 secrets/docker-duplicity-stack${HOST}${INSTANCE}/mail_credentials.json \
@@ -20,15 +22,24 @@ openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/s
  || { echo "Could not extract from secrets archive, exiting."; rm -f ~/secrets.tar.gz.enc; exit 1; }
 
 sudo chown root:root mail_credentials.json
+sudo chown $USER:$USER nextcloud_password.sh
 sudo chmod 400 nextcloud_password.sh mail_credentials.json
 
 cd ~
-test -f ~/openrc.sh || openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc | sudo tar -zxv --strip 2 secrets/bootstrap/openrc.sh && chmod 500 ~/openrc.sh
+test -f ~/openrc.sh || openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc \
+| sudo tar -zxv --strip 2 secrets/bootstrap/openrc.sh \
+&& sudo chmod 500 ~/openrc.sh \
+&& sudo chown $USER:$USER ~/openrc.sh
+
 test -f ~/openrc.sh || { echo "ERROR: ~/openrc.sh not found, exiting."; exit 1; }
 source ~/openrc.sh
 cd $SCRIPTPATH
 
 source nextcloud_password.sh
+
+cd ~
+test -d ~/env_py3 || { sudo virtualenv env_py3 -p /usr/bin/python3; sudo ~/env_py3/bin/pip install python-openstackclient; }
+cd $SCRIPTPATH
 INSTANCE_OPENSTACK=$(~/env_py3/bin/openstack server show -c id --format value $(hostname))
 sudo mkdir -p /mnt/cloud
 mountpoint -q /mnt/cloud || \
