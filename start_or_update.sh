@@ -19,8 +19,8 @@ openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/s
  secrets/docker-duplicity-stack${HOST}${INSTANCE}/nextcloud_password.sh \
  || { echo "Could not extract from secrets archive, exiting."; rm -f ~/secrets.tar.gz.enc; exit 1; }
 
-chown root:root nextcloud_password.sh mail_credentials.json
-chmod 400 nextcloud_password.sh mail_credentials.json
+sudo chown root:root mail_credentials.json
+sudo chmod 400 nextcloud_password.sh mail_credentials.json
 
 cd ~
 test -f ~/openrc.sh || openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc | sudo tar -zxv --strip 2 secrets/bootstrap/openrc.sh && chmod 500 ~/openrc.sh
@@ -64,7 +64,7 @@ CONTAINER=duplicity
 IMAGE=duplicity
 REPO=docker-duplicity
 unset VERSION_DUPLICITY
-VERSION_DUPLICITY=$(git ls-remote https://${GIT_SERVER}/yohan/${REPO}.git| head -1 | cut -f 1|cut -c -10)
+export VERSION_DUPLICITY=$(git ls-remote https://${GIT_SERVER}/yohan/${REPO}.git| head -1 | cut -f 1|cut -c -10)
 
 mkdir -p ~/build
 git clone https://${GIT_SERVER}/yohan/${REPO}.git ~/build/${REPO}
@@ -73,7 +73,6 @@ rm -rf ~/build
 
 export SCRIPT
 export OS_REGION_NAME=GRA
-VERSION_DUPLICITY=$VERSION_DUPLICITY \
- sudo -E bash -c 'docker-compose up --force-recreate' || { echo "ERROR: docker-compose up failed."; exit 1; }
+sudo -E bash -c 'docker-compose up --force-recreate' || { echo "ERROR: docker-compose up failed."; exit 1; }
 # We cannot remove the secrets files or restarting the container would become impossible
 #rm -f crontab debian.cnf
