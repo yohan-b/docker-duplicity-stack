@@ -21,6 +21,9 @@ services:
     volumes:
       - /mnt/volumes/tmp_duplicity_workdir/data:/mnt/tmp_duplicity_workdir:Z
       - /mnt/volumes/duplicity_cache/data:/mnt/duplicity_cache:Z
+      - /mnt/cloud:/mnt/cloud:Z
       - ./backup_scripts:/mnt/scripts:z
       - ./entrypoint.sh:/root/entrypoint.sh:z
+      - ./sendmail.py:/root/sendmail.py:z
+      - ./mail_credentials.json:/root/mail_credentials.json:z
     network_mode: "host"

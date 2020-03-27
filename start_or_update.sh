@@ -1,17 +1,45 @@
 #!/bin/bash
+#Absolute path to this script
+SCRIPT=$(readlink -f $0)
+#Absolute path this script is in
+SCRIPTPATH=$(dirname $SCRIPT)
+
+cd $SCRIPTPATH
+source vars
+
+test -z ${KEY} && { echo "KEY variable is not defined."; exit 1; }
+test -z ${SECRETS_ARCHIVE_PASSPHRASE} && { echo "SECRETS_ARCHIVE_PASSPHRASE variable is not defined."; exit 1; }
 test -z $1 || SCRIPT="$1"
 test -z $2 || HOST="_$2"
 test -z $3 || INSTANCE="_$3"
 
+test -f ~/secrets.tar.gz.enc || curl -o ~/secrets.tar.gz.enc "https://${CLOUD_SERVER}/s/${KEY}/download?path=%2F&files=secrets.tar.gz.enc"
+openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc \
+ | sudo tar -zxv --strip 2 secrets/docker-duplicity-stack${HOST}${INSTANCE}/mail_credentials.json \
+ secrets/docker-duplicity-stack${HOST}${INSTANCE}/nextcloud_password.sh \
+ || { echo "Could not extract from secrets archive, exiting."; rm -f ~/secrets.tar.gz.enc; exit 1; }
+
+chown root:root nextcloud_password.sh mail_credentials.json
+chmod 400 nextcloud_password.sh mail_credentials.json
+
+cd ~
+test -f ~/openrc.sh || openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc | sudo tar -zxv --strip 2 secrets/bootstrap/openrc.sh && chmod 500 ~/openrc.sh
+test -f ~/openrc.sh || { echo "ERROR: ~/openrc.sh not found, exiting."; exit 1; }
 source ~/openrc.sh
-INSTANCE=$(~/env_py3/bin/openstack server show -c id --format value $(hostname))
+cd $SCRIPTPATH
+
+source nextcloud_password.sh
+INSTANCE_OPENSTACK=$(~/env_py3/bin/openstack server show -c id --format value $(hostname))
+sudo mkdir -p /mnt/cloud
+mountpoint -q /mnt/cloud || \
+echo -n $NEXTCLOUD_PASSWORD | sudo -E mount -t davfs https://${CLOUD_SERVER}/remote.php/webdav/ /mnt/cloud/ -o uid=yohan,gid=yohan,username=$NEXTCLOUD_USER || exit 1
 VOLUME=tmp_duplicity_workdir
 sudo mkdir -p /mnt/volumes/${VOLUME}
 if ! mountpoint -q /mnt/volumes/${VOLUME}
 then
      ~/env_py3/bin/openstack volume create ${VOLUME} --size 2 --type high-speed
      VOLUME_ID=$(~/env_py3/bin/openstack volume show ${VOLUME} -c id --format value)
-     test -e /dev/disk/by-id/*${VOLUME_ID:0:20} || nova volume-attach $INSTANCE $VOLUME_ID auto
+     test -e /dev/disk/by-id/*${VOLUME_ID:0:20} || nova volume-attach $INSTANCE_OPENSTACK $VOLUME_ID auto
      sleep 3
      sudo mkfs.ext4 -F /dev/disk/by-id/*${VOLUME_ID:0:20}
      sudo mount /dev/disk/by-id/*${VOLUME_ID:0:20} /mnt/volumes/${VOLUME} || exit 1
@@ -23,7 +51,7 @@ if ! mountpoint -q /mnt/volumes/${VOLUME}
 then
      ~/env_py3/bin/openstack volume create ${VOLUME} --size 2 --type high-speed
      VOLUME_ID=$(~/env_py3/bin/openstack volume show ${VOLUME} -c id --format value)
-     test -e /dev/disk/by-id/*${VOLUME_ID:0:20} || nova volume-attach $INSTANCE $VOLUME_ID auto
+     test -e /dev/disk/by-id/*${VOLUME_ID:0:20} || nova volume-attach $INSTANCE_OPENSTACK $VOLUME_ID auto
      sleep 3
      sudo mount /dev/disk/by-id/*${VOLUME_ID:0:20} /mnt/volumes/${VOLUME} \
        || sudo mkfs.ext4 -F /dev/disk/by-id/*${VOLUME_ID:0:20}
@@ -36,18 +64,16 @@ CONTAINER=duplicity
 IMAGE=duplicity
 REPO=docker-duplicity
 unset VERSION_DUPLICITY
-VERSION_DUPLICITY=$(git ls-remote https://git.scimetis.net/yohan/${REPO}.git| head -1 | cut -f 1|cut -c -10)
+VERSION_DUPLICITY=$(git ls-remote https://${GIT_SERVER}/yohan/${REPO}.git| head -1 | cut -f 1|cut -c -10)
 
 mkdir -p ~/build
-git clone https://git.scimetis.net/yohan/${REPO}.git ~/build/${REPO}
+git clone https://${GIT_SERVER}/yohan/${REPO}.git ~/build/${REPO}
 sudo docker build -t ${IMAGE}:$VERSION_DUPLICITY ~/build/${REPO}
+rm -rf ~/build
 
 export SCRIPT
 export OS_REGION_NAME=GRA
-
 VERSION_DUPLICITY=$VERSION_DUPLICITY \
- sudo -E bash -c 'docker-compose up -d --force-recreate'
+ sudo -E bash -c 'docker-compose up --force-recreate' || { echo "ERROR: docker-compose up failed."; exit 1; }
 # We cannot remove the secrets files or restarting the container would become impossible
 #rm -f crontab debian.cnf
-
-rm -rf ~/build

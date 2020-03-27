@@ -22,7 +22,7 @@ else
     sudo docker-compose ps
     exit 1
 fi
-
+sudo umount /mnt/cloud
 sudo umount /mnt/volumes/${VOLUME}
 mountpoint -q /mnt/volumes/${VOLUME} && exit 1
 VOLUME_ID=$(~/env_py3/bin/openstack volume show ${VOLUME} -c id --format value)
