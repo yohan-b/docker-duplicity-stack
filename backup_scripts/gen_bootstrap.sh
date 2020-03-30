@@ -15,9 +15,9 @@ then
     /root/sendmail.py -a ${DIRECTORY}/secrets.tar.gz.enc /root/mail /root/mail_credentials.json
     cp -f ${DIRECTORY}/secrets.tar.gz.enc /mnt/cloud/Passwords/
 fi
-ssh -vvv -p2224 chez-yohan.scimetis.net mkdir -p /mnt/archives_critiques/secrets/
+ssh -p2224 yohan@chez-yohan.scimetis.net sudo mkdir -p /mnt/archives_critiques/secrets/
 FILENAME=secrets.tar.gz.enc-$(sha1sum ${DIRECTORY}/secrets.tar.gz.enc | awk -F' ' '{print $1}')
-scp -P 2224 ${DIRECTORY}/secrets.tar.gz.enc chez-yohan.scimetis.net:/mnt/archives_critiques/secrets/$FILENAME
+scp -P 2224 ${DIRECTORY}/secrets.tar.gz.enc yohan@chez-yohan.scimetis.net:/mnt/archives_critiques/secrets/$FILENAME
 rm -rf ${DIRECTORY}/secrets* ${DIRECTORY}/Documentation.md
 
 for name in docker-nextcloud-stack docker-reverse-proxy-stack docker-reverse-proxy docker-gogs-stack docker-mysql-stack docker-mysql
