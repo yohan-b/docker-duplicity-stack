@@ -13,8 +13,11 @@ then
     tar -czvpf - -C ${DIRECTORY} secrets | openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -salt -out ${DIRECTORY}/secrets.tar.gz.enc
     echo "Secrets archive has changed. New file attached." > /root/mail
     /root/sendmail.py -a ${DIRECTORY}/secrets.tar.gz.enc /root/mail /root/mail_credentials.json
-    mv -f ${DIRECTORY}/secrets.tar.gz.enc /mnt/cloud/Passwords/
+    cp -f ${DIRECTORY}/secrets.tar.gz.enc /mnt/cloud/Passwords/
 fi
+ssh -p2224 chez-yohan.scimetis.net mkdir -p /mnt/archives_critiques/secrets/
+FILENAME=secrets.tar.gz.enc-$(sha1sum ${DIRECTORY}/secrets.tar.gz.enc)
+scp -P 2224 ${DIRECTORY}/secrets.tar.gz.enc chez-yohan.scimetis.net:/mnt/archives_critiques/secrets/$FILENAME
 rm -rf ${DIRECTORY}/secrets* ${DIRECTORY}/Documentation.md
 
 for name in docker-nextcloud-stack docker-reverse-proxy-stack docker-reverse-proxy docker-gogs-stack docker-mysql-stack docker-mysql

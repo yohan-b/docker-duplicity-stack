@@ -30,4 +30,7 @@ services:
       - ./entrypoint.sh:/root/entrypoint.sh:z
       - ./sendmail.py:/root/sendmail.py:z
       - ./mail_credentials.json:/root/mail_credentials.json:z
+      - ./id_rsa:/root/.ssh/id_rsa:Z
+      - ./id_rsa.pub:/root/.ssh/id_rsa.pub:Z
+      - ./config:/root/.ssh/config:Z
     network_mode: "host"

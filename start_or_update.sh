@@ -15,15 +15,27 @@ test -z $3 || INSTANCE="_$3"
 
 USER=$(whoami)
 
-test -f ~/secrets.tar.gz.enc || curl -o ~/secrets.tar.gz.enc "https://${CLOUD_SERVER}/s/${KEY}/download?path=%2F&files=secrets.tar.gz.enc"
+if ! test -f ~/secrets.tar.gz.enc
+then
+    curl -o ~/secrets.tar.gz.enc "https://${CLOUD_SERVER}/s/${KEY}/download?path=%2F&files=secrets.tar.gz.enc"
+    if ! test -f ~/secrets.tar.gz.enc
+    then
+        echo "ERROR: ~/secrets.tar.gz.enc not found, exiting."
+        exit 1
+    fi
+fi
 openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc \
  | sudo tar -zxv --strip 2 secrets/docker-duplicity-stack${HOST}${INSTANCE}/mail_credentials.json \
  secrets/docker-duplicity-stack${HOST}${INSTANCE}/nextcloud_password.sh \
+ secrets/bootstrap/id_rsa secrets/bootstrap/id_rsa.pub \
  || { echo "Could not extract from secrets archive, exiting."; rm -f ~/secrets.tar.gz.enc; exit 1; }
 
 sudo chown root:root mail_credentials.json
 sudo chown $USER:$USER nextcloud_password.sh
 sudo chmod 400 nextcloud_password.sh mail_credentials.json
+
+sudo chown root. id_rsa id_rsa.pub config
+sudo chmod 400 id_rsa id_rsa.pub config
 
 cd ~
 test -f ~/openrc.sh || openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ~/secrets.tar.gz.enc \
