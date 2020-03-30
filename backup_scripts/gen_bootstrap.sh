@@ -15,7 +15,7 @@ then
     /root/sendmail.py -a ${DIRECTORY}/secrets.tar.gz.enc /root/mail /root/mail_credentials.json
     cp -f ${DIRECTORY}/secrets.tar.gz.enc /mnt/cloud/Passwords/
 fi
-ssh -p2224 yohan@chez-yohan.scimetis.net sudo mkdir -p /mnt/archives_critiques/secrets/
+ssh -p2224 yohan@chez-yohan.scimetis.net "bash -c 'sudo mkdir -p /mnt/archives_critiques/secrets/ && sudo chown -R yohan. /mnt/archives_critiques/secrets/'"
 FILENAME=secrets.tar.gz.enc-$(sha1sum ${DIRECTORY}/secrets.tar.gz.enc | awk -F' ' '{print $1}')
 scp -P 2224 ${DIRECTORY}/secrets.tar.gz.enc yohan@chez-yohan.scimetis.net:/mnt/archives_critiques/secrets/$FILENAME
 rm -rf ${DIRECTORY}/secrets* ${DIRECTORY}/Documentation.md
