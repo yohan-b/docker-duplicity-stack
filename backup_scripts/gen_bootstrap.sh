@@ -20,7 +20,7 @@ FILENAME=secrets.tar.gz.enc-$(sha1sum ${DIRECTORY}/secrets.tar.gz.enc | awk -F' 
 scp -P 2224 ${DIRECTORY}/secrets.tar.gz.enc yohan@chez-yohan.scimetis.net:/mnt/archives_critiques/secrets/$FILENAME
 rm -rf ${DIRECTORY}/secrets* ${DIRECTORY}/Documentation.md
 
-for name in docker-nextcloud-stack docker-reverse-proxy-stack docker-reverse-proxy docker-gogs-stack docker-mysql-stack docker-mysql
+for name in docker-nextcloud-stack docker-reverse-proxy-stack docker-reverse-proxy docker-gogs-stack docker-mysql-stack docker-mysql systemd-mount-cinder-volume
 do
     git clone https://git.scimetis.net/yohan/${name}.git ${DIRECTORY}/${name}
     tar -czf ${DIRECTORY}/${name}.tar.gz -C ${DIRECTORY} ${name}
