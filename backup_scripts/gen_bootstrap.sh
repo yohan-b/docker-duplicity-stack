@@ -1,8 +1,8 @@
 #!/bin/bash
 set -x
 
-DIRECTORY=/mnt/tmp_duplicity_workdir
-ARCHIVE_DIR=/mnt/duplicity_cache
+DIRECTORY=/mnt/volumes/tmp_duplicity_workdir/data
+ARCHIVE_DIR=/mnt/volumes/duplicity_cache/data
 curl -o ${DIRECTORY}/secrets.tar.gz.enc "https://cloud.scimetis.net/s/${KEY}/download?path=%2F&files=secrets.tar.gz.enc" || { echo "ERROR: Failed to retrieve secrets archive."; exit 1; }
 cd ${DIRECTORY}
 openssl enc -aes-256-cbc -md md5 -pass env:SECRETS_ARCHIVE_PASSPHRASE -d -in ${DIRECTORY}/secrets.tar.gz.enc | tar -zxv
