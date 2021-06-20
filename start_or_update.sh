@@ -72,7 +72,7 @@ VOLUME=duplicity_cache
 sudo mkdir -p /mnt/volumes/${VOLUME}
 if ! mountpoint -q /mnt/volumes/${VOLUME}
 then
-     ~/env_py3/bin/openstack volume create ${VOLUME} --size 2 --type high-speed || exit 1
+     ~/env_py3/bin/openstack volume create ${VOLUME} --size 5 --type high-speed || exit 1
      VOLUME_ID=$(~/env_py3/bin/openstack volume show ${VOLUME} -c id --format value)
      test -e /dev/disk/by-id/*${VOLUME_ID:0:20} || nova volume-attach $INSTANCE_OPENSTACK $VOLUME_ID auto
      sleep 3
